@@ -4,14 +4,34 @@ class MoviesController < ApplicationController
   # GET /movies or /movies.json
   def index
     @all_ratings = Movie.all_ratings
+    redirect_needed = false
 
+    # Handling ratings filter
     if params[:ratings].present?
       @ratings_to_show = params[:ratings].keys
+      session[:ratings] = params[:ratings].to_unsafe_h
+    elsif session[:ratings].present?
+      @ratings_to_show = session[:ratings].keys
+      redirect_needed = true
     else
       @ratings_to_show = @all_ratings
+      session[:ratings] = @ratings_to_show.index_with('1')
     end
 
-    @sort_by = params[:sort_by]
+    # Handling sort by
+    if params[:sort_by].present?
+      @sort_by = params[:sort_by]
+      session[:sort_by] = @sort_by
+    elsif session[:sort_by].present?
+      @sort_by = session[:sort_by]
+      redirect_needed = true
+    end
+
+    if redirect_needed
+      flash.keep
+      redirect_to movies_path(sort_by: @sort_by, ratings: session[:ratings]) and return
+    end
+
     @movies = Movie.with_ratings(@ratings_to_show, @sort_by)
   end
 
